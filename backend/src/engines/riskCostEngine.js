@@ -108,37 +108,66 @@ const CUSTOMS_BY_REGION = {
 
 const INFLATION_FACTOR = 1.12; // 12% logistics inflation
 
-function calculateSegmentCost(segment, weight, itemType) {
-  // segment: { mode, distanceKm, originHub, destHub }
-  const weightTonnes = Math.max(weight / 1000, 0.01);
-  const ratePerKm = TRANSPORT_COST_PER_KM[segment.mode] || 0.25;
-
-  const freightCost = ratePerKm * segment.distanceKm * weightTonnes;
-  const fuelCost    = ratePerKm * 0.3 * segment.distanceKm; // Restoring vessel-level fuel overhead
-  const handlingCost = (HANDLING_BY_ITEM[itemType?.toLowerCase()] || 90);
-
-  return {
-    freight: Math.round(freightCost),
-    fuel:    Math.round(fuelCost),
-    handling: handlingCost,
-    total:   Math.round((freightCost + fuelCost + handlingCost)),
-  };
-}
-
 function calculateRouteCost(segments, weight, itemType, destRegion = 'europe') {
-  let freight = 0, fuel = 0, handling = 0;
-  for (const seg of segments) {
-    const sc = calculateSegmentCost(seg, weight, itemType);
-    freight  += sc.freight;
-    fuel     += sc.fuel;
-    handling += sc.handling;
+  const primaryMode = segments.find(s => s.mode === 'air') ? 'air' : (segments.find(s => s.mode === 'sea') ? 'sea' : 'road');
+  
+  let freight = 0, fuel = 0, handling = 0, customs = 0;
+
+  if (primaryMode === 'air') {
+    // 1. AIR FREIGHT PRICING (Weight Tiers)
+    let ratePerKg = 8.0;
+    if (weight > 2000) ratePerKg = 3.0;
+    else if (weight > 500) ratePerKg = 4.0;
+    else if (weight > 100) ratePerKg = 5.5;
+    else ratePerKg = 7.5;
+
+    // Apply distance factor (Sanity check: benchmarks are usually US-China or US-EU)
+    // Avg benchmark distance is ~10,000km. If longer, price increases slightly.
+    const totalDist = segments.reduce((acc, s) => acc + s.distanceKm, 0);
+    const distFactor = Math.max(0.8, totalDist / 10000);
+    
+    freight = Math.round(weight * ratePerKg * distFactor);
+    fuel = Math.round(freight * 0.20); // 20% surcharge
+    handling = 150; // Standard handling
+    customs = 250;  // Standard per shipment customs
+
+    // Stop factor: +10% if multi-segment air
+    const airSegments = segments.filter(s => s.mode === 'air');
+    if (airSegments.length > 1) {
+      freight = Math.round(freight * 1.12);
+      fuel = Math.round(fuel * 1.12);
+    }
+  } else if (primaryMode === 'sea') {
+    // 2. SEA FREIGHT MODEL
+    // LCL vs FCL logic
+    let totalSeaCost = weight < 1000 ? 450 : 3800;
+    
+    // Distance adjustment for sea
+    const totalDist = segments.reduce((acc, s) => acc + s.distanceKm, 0);
+    const distFactor = Math.max(0.7, totalDist / 15000);
+    totalSeaCost = Math.round(totalSeaCost * distFactor);
+
+    // Breakdown components (proportional to sum to total exactly)
+    freight = Math.round(totalSeaCost * 0.70);
+    fuel = Math.round(totalSeaCost * 0.15);
+    handling = Math.round(totalSeaCost * 0.10);
+    customs = totalSeaCost - (freight + fuel + handling); // Remainder ensures flat sum
+  } else {
+    // Road/Rail Fallback
+    freight = Math.round(weight * 0.5 * (segments.reduce((acc, s) => acc + s.distanceKm, 0) / 1000));
+    fuel = Math.round(freight * 0.15);
+    handling = 100;
+    customs = 50;
   }
 
-  const subtotal = freight + fuel + handling;
-  const customs     = Math.round(subtotal * (CUSTOMS_BY_REGION[destRegion] || 0.04));
-  const warehousing = Math.round(subtotal * 0.05);
-  const insurance   = Math.round(subtotal * 0.015);
+  // Multi-modal discount (Air + Sea)
+  const isHybrid = segments.some(s => s.mode === 'air') && segments.some(s => s.mode === 'sea');
+  if (isHybrid) {
+    freight = Math.round(freight * 0.85); // 15% discount for hybrid mix
+    fuel = Math.round(fuel * 0.85);
+  }
 
+  // Disruption penalties (additive)
   let extraCostFromDisruptions = 0;
   segments.forEach(seg => {
     if (seg.isImpacted) {
@@ -146,17 +175,14 @@ function calculateRouteCost(segments, weight, itemType, destRegion = 'europe') {
     }
   });
 
-  const total = Math.round((subtotal + customs + warehousing + insurance) * INFLATION_FACTOR) + extraCostFromDisruptions;
+  const total = freight + fuel + handling + customs + extraCostFromDisruptions;
 
   return {
     freight,
     fuel,
     handling,
     customs,
-    warehousing,
-    insurance,
-    inflationFactor: INFLATION_FACTOR,
-    subtotal,
+    subtotal: freight + fuel + handling + customs,
     extraCostFromDisruptions,
     total,
   };

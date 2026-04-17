@@ -36,7 +36,7 @@ const holdIcon = createIcon('#6366f1', '<circle cx="12" cy="12" r="10"></circle>
 
 const MODE_COLORS = {
   air: '#a855f7',
-  sea: '#06b6d4',
+  sea: '#3b82f6',
   road: '#f59e0b',
   rail: '#10b981',
 };
@@ -313,7 +313,7 @@ const MapVisualization = ({
             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#a855f7' }}></div> Air Path
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#06b6d4' }}></div> Sea Path
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6' }}></div> Sea Path
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }}></div> Road Path

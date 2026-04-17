@@ -17,10 +17,10 @@ function App() {
             <Globe size={24} color="white" />
           </div>
           <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
-            SCIS <span style={{ color: 'var(--primary)', fontWeight: 400 }}>Intelligence</span>
+            CODAIX <span style={{ color: 'var(--primary)', fontWeight: 400 }}>Intelligence</span>
           </span>
         </div>
-        
+
         <div className="nav-links">
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
             <LayoutDashboard size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />

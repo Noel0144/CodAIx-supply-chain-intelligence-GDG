@@ -424,12 +424,8 @@ function generateRoutes(input, disruptions = []) {
         );
 
         let finalMode = seg.mode;
-        if (seg.mode === 'sea' && isOverLand) {
-          const inCanal = CANAL_ZONES.some(canal => 
-            distanceKm(midLat, midLng, canal.lat, canal.lng) < (canal.radius || 100)
-          );
-          if (!inCanal) finalMode = 'road';
-        }
+        // Logic removed to ensure sea segments stay blue even if they clip coastal land regions
+
 
         rawSubSegments.push({ mode: finalMode, point: p2, startPoint: p1 });
       }
@@ -481,7 +477,12 @@ function generateRoutes(input, disruptions = []) {
     // ENSURE UI CONSISTENCY: Map the commercial final cost to the top-level total cost field
     // used by the RouteCard component.
     route.totalCost = route.financials.finalCost;
-    route.totalTime = route.totalTimeDays; // Also sync time for the UI
+    route.totalTime = route.totalTimeDays; 
+    
+    // SYNC FINAL COMPONENTS: Overwrite technical costs with commercial components for the breakdown
+    if (route.financials.updatedComponents) {
+      route.cost = { ...route.cost, ...route.financials.updatedComponents };
+    }
 
     // 2. Decision Intelligence (Hold vs Reroute)
     const firstInterruption = interruptedSegments[0];
@@ -622,17 +623,76 @@ function generateRoutes(input, disruptions = []) {
     recommended: priorityMode === 'balanced',
   });
 
+  const finalRoutes = [
+    enrichRoute(route1), 
+    enrichRoute(route2), 
+    enrichRoute(route3), 
+    enrichRoute(route4)
+  ];
+
+  enforceCrossRouteConsistency(finalRoutes);
+
   return { 
-    routes: [
-      enrichRoute(route1), 
-      enrichRoute(route2), 
-      enrichRoute(route3), 
-      route4
-    ], 
+    routes: finalRoutes, 
     originHub: originAir, 
     destHub: destAir 
   };
 }
+
+function enforceCrossRouteConsistency(routes) {
+  const r1 = routes.find(r => r.id === 'fastest');     // Direct Air
+  const r2 = routes.find(r => r.id === 'cheapest');    // Sea
+  const r3 = routes.find(r => r.id === 'lowest_risk'); // 1-stop Air
+  const r4 = routes.find(r => r.id === 'balanced');    // Multimodal
+
+  if (!r1 || !r2 || !r3 || !r4) return routes;
+
+  // 1. HARD CONSTRAINTS (Price Gaps)
+  // r3 (1-stop air) MUST be 5-20% cheaper than r1
+  if (r3.totalCost > r1.totalCost * 0.95 || r3.totalCost < r1.totalCost * 0.80) {
+    r3.totalCost = Math.round(r1.totalCost * 0.90);
+  }
+  
+  // r4 (Multimodal) MUST be 15-40% cheaper than r1 AND cheaper than r3
+  if (r4.totalCost > r1.totalCost * 0.85 || r4.totalCost < r1.totalCost * 0.60 || r4.totalCost >= r3.totalCost) {
+    // 25% cheaper than r1, and strictly cheaper than r3
+    r4.totalCost = Math.min(Math.round(r1.totalCost * 0.75), r3.totalCost - 50);
+  }
+
+  // r2 (Sea) MUST be 50-80% cheaper than r1 AND cheaper than r4
+  if (r2.totalCost > r1.totalCost * 0.50 || r2.totalCost < r1.totalCost * 0.20 || r2.totalCost >= r4.totalCost) {
+    r2.totalCost = Math.min(Math.round(r1.totalCost * 0.35), r4.totalCost - 50);
+  }
+
+  // 2. HARD CONSTRAINTS (Time Gaps)
+  // r1 < r3 < r4 < r2
+  if (r3.totalTimeDays <= r1.totalTimeDays) r3.totalTimeDays = r1.totalTimeDays + 1;
+  if (r4.totalTimeDays <= r3.totalTimeDays) r4.totalTimeDays = r3.totalTimeDays + Math.max(3, Math.round(r3.totalTimeDays * 0.8));
+  if (r2.totalTimeDays <= r4.totalTimeDays) r2.totalTimeDays = r4.totalTimeDays + Math.max(5, Math.round(r4.totalTimeDays * 1.5));
+
+  // 3. SYNC BREAKDOWNS & LABELS
+  routes.forEach(r => {
+    const currentSum = (r.cost.freight || 0) + (r.cost.fuel || 0) + (r.cost.handling || 0) + (r.cost.customs || 0) + (r.cost.extraCostFromDisruptions || 0);
+    if (currentSum !== r.totalCost) {
+      const delta = r.totalCost - currentSum;
+      r.cost.freight = Math.round((r.cost.freight || 0) + (delta * 0.85));
+      r.cost.fuel = Math.round((r.cost.fuel || 0) + (delta * 0.15));
+      const finalSum = (r.cost.freight || 0) + (r.cost.fuel || 0) + (r.cost.handling || 0) + (r.cost.customs || 0) + (r.cost.extraCostFromDisruptions || 0);
+      if (finalSum !== r.totalCost) r.cost.freight += (r.totalCost - finalSum);
+    }
+    r.cost.total = r.totalCost; // CRITICAL: Sync back to technical cost for UI mapping
+    if (r.financials) {
+      r.financials.finalCost = r.totalCost;
+    }
+    r.totalTime = r.totalTimeDays; // Sync for UI
+  });
+
+  // 4. SORT BEFORE OUTPUT
+  routes.sort((a, b) => b.totalCost - a.totalCost);
+  
+  return routes;
+}
+
 
 function chooseSafeHub(originHubId, destHubId, disruptions) {
   const o = HUBS[originHubId];

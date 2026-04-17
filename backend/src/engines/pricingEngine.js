@@ -9,50 +9,47 @@ const { CARRIERS } = require('./carriers');
  */
 function calculateRoutePricing(route, pricingMode = 'spot', disruptions = [], options = {}) {
   const { contractConfig = null } = options;
-  
-  // 1. Carrier selection
   const primaryMode = route.modes?.[0] || 'road'; 
   const carrier = CARRIERS.find(c => c.supportedModes.includes(primaryMode)) || CARRIERS[0];
-  
-  // Extract technical components
-  const rawFreight = (route.cost.freight || 0) + (route.cost.customs || 0) + (route.cost.warehousing || 0) + (route.cost.insurance || 0);
-  const baseFuel = route.cost.fuel || 0;
-  const fixedHandling = route.cost.handling || 0;
+
+  // Technical baseline from route.cost (which now has freight, fuel, handling, customs)
+  let freight = route.cost.freight || 0;
+  let fuel = route.cost.fuel || 0;
+  let handling = route.cost.handling || 0;
+  let customs = route.cost.customs || 0;
   const rawDisruptionCost = route.extraCostFromDisruptions || 0;
 
-  // LOGIC: CONTRACT MODE (Standard Partnership)
+  // 1. COMMERCIAL MODEL SELECTION
   if (pricingMode === 'contract' && contractConfig) {
-    return calculateContractCost(route, contractConfig, carrier, rawDisruptionCost, rawFreight, baseFuel, fixedHandling);
+    // Contract provides discounts (e.g. 15-30% off)
+    const multiplier = 0.75; // Simplification for high-level logic consistency
+    freight = Math.round(freight * multiplier);
+    fuel = Math.round(fuel * multiplier);
+    handling = Math.round(handling * multiplier);
+  } else {
+    // Spot premium (Market urgency)
+    const multiplier = 1.65; 
+    freight = Math.round(freight * multiplier);
+    fuel = Math.round(fuel * multiplier);
   }
 
-  // LOGIC: SPOT MODE (Market Premium)
-  // Spot is now clearly more expensive (1.5x premium) representing on-demand urgency
-  let spotMultiplier = 1.50; 
-  
-  const intensity = route.disruptionImpacts?.reduce((acc, imp) => {
-     const weight = { 'High': 1.8, 'Medium': 1.3, 'Low': 1.1 }[imp.severity] || 1.0;
-     return acc + weight;
-  }, 0) || 0;
-  
-  spotMultiplier += (intensity * 0.08); 
-  
-  const basePrice = rawFreight * spotMultiplier;
-  const pricingAdjustment = baseFuel + (carrier.fixedHandlingFee * 2.0); 
-  
-  const finalCost = basePrice + rawDisruptionCost + pricingAdjustment + fixedHandling;
+  const finalCost = freight + fuel + handling + customs + rawDisruptionCost;
 
   return {
     carrierId: carrier.id,
     carrierName: carrier.name,
-    pricingModeUsed: 'spot',
-    baseCost: Math.round(basePrice),
-    baseTechnicalCost: Math.round(basePrice),
-    disruptionCost: Math.round(rawDisruptionCost),
-    disruptionSurcharge: Math.round(rawDisruptionCost),
-    pricingAdjustment: Math.round(pricingAdjustment),
-    commercialAdjustment: Math.round(pricingAdjustment),
+    pricingModeUsed: pricingMode,
+    // We update the route.cost components so the UI can use them directly
+    updatedComponents: {
+      freight,
+      fuel,
+      handling,
+      customs,
+      extraCostFromDisruptions: rawDisruptionCost
+    },
+    baseTechnicalCost: freight, 
     finalCost: Math.round(finalCost),
-    SLAStatus: 'N/A'
+    SLAStatus: 'NOMINAL'
   };
 }
 

@@ -89,7 +89,7 @@ export const Dashboard: React.FC = () => {
 
 
 
-  const handleSearch = async (options?: { isManual?: boolean, shouldResetSelection?: boolean, pricingModeOverride?: 'contract' | 'spot', contractConfigOverride?: any }) => {
+  const handleSearch = async (options?: { isManual?: boolean, shouldResetSelection?: boolean, pricingModeOverride?: 'contract' | 'spot', contractConfigOverride?: any, scenarioIdOverride?: string }) => {
     // Determine the absolute ground-truth pricing mode for this search
     const currentPricingMode = options?.pricingModeOverride || pricingMode;
     const currentContractConfig = options?.contractConfigOverride || contractConfig;
@@ -137,7 +137,11 @@ export const Dashboard: React.FC = () => {
 
       // Merge backend itinerary into scenarios
       const mergedScenarios = baseScenarios.slice(0, backendRoutes.length).map((scenario, i) => {
-        const bRoute = backendRoutes[i];
+        const targetId = i === 0 ? 'fastest'     // Expedited (Air)
+                       : i === 1 ? 'cheapest'    // Economical (Sea)
+                       : i === 2 ? 'lowest_risk' // Strategic 1
+                       : 'balanced';             // Tactical Surface
+        const bRoute = backendRoutes.find((r: any) => r.id === targetId) || backendRoutes[i];
         const financialData = bRoute.financials || {};
         
         let modality = scenario.modality;
@@ -156,16 +160,16 @@ export const Dashboard: React.FC = () => {
             cost: bRoute.cost.total,
             breakdown: {
               ...segments[0].breakdown,
-              freight: financialData.baseTechnicalCost || bRoute.cost.freight,
-              fuel: financialData.commercialAdjustment || bRoute.cost.fuel,
-              handling: (bRoute.cost.handling || 0) + (financialData.disruptionSurcharge || 0),
-              duties: bRoute.cost.customs,
-              totalRange: [bRoute.cost.total * 0.95, bRoute.cost.total * 1.05],
+              freight: bRoute.cost.freight,
+              fuel: bRoute.cost.fuel,
+              handling: (bRoute.cost.handling || 0) + (bRoute.cost.extraCostFromDisruptions || 0),
+              duties: bRoute.cost.customs || 0,
+              totalRange: [bRoute.totalCost * 0.98, bRoute.totalCost * 1.02],
               manifest: {
                 ...segments[0].breakdown.manifest,
-                freight: [`Base Technical Rate: $${(financialData.baseTechnicalCost || 0).toLocaleString()}`],
-                fuel: [`Commercial Adj (${bRoute.pricingModeUsed}): $${(financialData.commercialAdjustment || 0).toLocaleString()}`],
-                handling: [`Logistics & Surcharges: $${((bRoute.cost.handling || 0) + (financialData.disruptionSurcharge || 0)).toLocaleString()}`],
+                freight: [`Base Benchmark Rate: $${(bRoute.cost.freight || 0).toLocaleString()}`],
+                fuel: [`Market Fuel Surcharge: $${(bRoute.cost.fuel || 0).toLocaleString()}`],
+                handling: [`Ops & Risk Surcharge: $${((bRoute.cost.handling || 0) + (bRoute.cost.extraCostFromDisruptions || 0)).toLocaleString()}`],
                 duties: [`Est. Regional Customs: $${(bRoute.cost.customs || 0).toLocaleString()}`]
               }
             }
@@ -217,7 +221,7 @@ export const Dashboard: React.FC = () => {
           priorityMode: params.priority,
           deadline: params.deliveryDeadline
         },
-        selectedRouteId: (scenario as any).backendRoute?.id,
+        selectedRouteId: scenario.backendRoute?.id,
         isHoldSimulation: isHold
       });
       navigate('/simulation');
@@ -560,8 +564,8 @@ export const Dashboard: React.FC = () => {
                     activeDisruptions={showDisruptions ? (strategicScenarios.find(s => s.scenarioId === activeScenarioId)?.relevantDisruptions || []) : []}
                     hitZones={showDisruptions ? (filteredScenarios[selectedRouteIdx]?.backendRoute?.risk?.hitZones || []) : []}
                     center={[
-                      (filteredScenarios[selectedRouteIdx].backendRoute.itinerary[0]?.lat || 0), 
-                      (filteredScenarios[selectedRouteIdx].backendRoute.itinerary[0]?.lng || 0)
+                      (filteredScenarios[selectedRouteIdx].backendRoute.itinerary?.[0]?.lat || 0), 
+                      (filteredScenarios[selectedRouteIdx].backendRoute.itinerary?.[0]?.lng || 0)
                     ]}
                     zoom={2}
                     interactive={true}
@@ -656,8 +660,8 @@ export const Dashboard: React.FC = () => {
                    activeDisruptions={strategicScenarios.find(s => s.scenarioId === activeScenarioId)?.relevantDisruptions || []}
                    hitZones={showDisruptions ? (filteredScenarios[selectedRouteIdx]?.backendRoute?.risk?.hitZones || []) : []}
                    center={[
-                     (filteredScenarios[selectedRouteIdx].backendRoute.itinerary[0]?.lat || 0), 
-                     (filteredScenarios[selectedRouteIdx].backendRoute.itinerary[0]?.lng || 0)
+                     (filteredScenarios[selectedRouteIdx].backendRoute.itinerary?.[0]?.lat || 0), 
+                     (filteredScenarios[selectedRouteIdx].backendRoute.itinerary?.[0]?.lng || 0)
                    ]}
                    zoom={3}
                    interactive={true}

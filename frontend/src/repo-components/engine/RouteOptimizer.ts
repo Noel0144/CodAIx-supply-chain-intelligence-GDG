@@ -59,6 +59,7 @@ export interface Scenario {
   slaViolation?: boolean;
   activeDisruptions: Disruption[];
   shapImportance: ShapValue[];
+  backendRoute?: any;
 }
 
 export class RouteOptimizer {

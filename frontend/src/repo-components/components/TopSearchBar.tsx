@@ -22,7 +22,7 @@ export const TopSearchBar: React.FC<Props> = ({ params, setParams, onSearch }) =
   const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
-    axios.get('http://localhost:4000/api/hubs')
+    axios.get('/api/hubs')
       .then(res => {
         if (res.data && res.data.cities) {
           setCities(res.data.cities);
