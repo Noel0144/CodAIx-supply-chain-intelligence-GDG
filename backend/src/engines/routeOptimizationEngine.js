@@ -10,10 +10,10 @@ const { calculateHoldImpact, evaluateDecision } = require('./holdDecisionEngine'
 
 // Speed (km/h) and cost biases per mode
 const MODE_SPECS = {
-  air:  { speedKmh: 850,  co2PerKm: 0.602, label: '✈ Air Freight' },
-  sea:  { speedKmh: 35,   co2PerKm: 0.015, label: '🚢 Sea Freight' },
-  road: { speedKmh: 65,   co2PerKm: 0.080, label: '🚛 Road Freight' },
-  rail: { speedKmh: 80,   co2PerKm: 0.041, label: '🚆 Rail Freight' },
+  air:  { speedKmh: 850,  co2PerKm: 0.602, label: 'Air Freight' },
+  sea:  { speedKmh: 35,   co2PerKm: 0.015, label: 'Sea Freight' },
+  road: { speedKmh: 65,   co2PerKm: 0.080, label: 'Road Freight' },
+  rail: { speedKmh: 80,   co2PerKm: 0.041, label: 'Rail Freight' },
 };
 
 function resolveHub(cityName, type = 'airport') {
@@ -424,8 +424,11 @@ function generateRoutes(input, disruptions = []) {
         );
 
         let finalMode = seg.mode;
-        // Logic removed to ensure sea segments stay blue even if they clip coastal land regions
-
+        const inCanal = CANAL_ZONES.some(c => distanceKm(midLat, midLng, c.lat, c.lng) < 150);
+        
+        if (seg.mode === 'sea' && isOverLand && !inCanal) {
+          finalMode = 'road';
+        }
 
         rawSubSegments.push({ mode: finalMode, point: p2, startPoint: p1 });
       }
@@ -438,7 +441,7 @@ function generateRoutes(input, disruptions = []) {
         ...seg,
         mode: rawSubSegments[0].mode,
         points: [rawSubSegments[0].startPoint, rawSubSegments[0].point],
-        modeLabel: rawSubSegments[0].mode === 'road' ? '🚛 Land Bridge / Transfer' : seg.modeLabel
+        modeLabel: rawSubSegments[0].mode === 'road' ? 'Land Bridge / Transfer' : seg.modeLabel
       };
 
       for (let i = 1; i < rawSubSegments.length; i++) {
@@ -538,7 +541,7 @@ function generateRoutes(input, disruptions = []) {
   const route1 = {
     id: 'fastest',
     name: 'Fastest Route (Direct Air)',
-    icon: '⚡',
+    icon: 'fastest',
     description: 'Direct air corridor — prioritizing velocity',
     displaySegments: r1Display,
     itinerary: r1Itin.itinerary,
@@ -561,7 +564,7 @@ function generateRoutes(input, disruptions = []) {
   const route2 = {
     id: 'cheapest',
     name: 'Cheapest Multi-mode',
-    icon: '💰',
+    icon: 'cheapest',
     description: 'Integrated sea freight — lowest logistical footprint',
     displaySegments: r2Display,
     itinerary: r2Itin.itinerary,
@@ -585,7 +588,7 @@ function generateRoutes(input, disruptions = []) {
   const route3 = {
     id: 'lowest_risk',
     name: 'Lowest Risk Corridor',
-    icon: '🛡️',
+    icon: 'lowest_risk',
     description: `Secure air relay via ${HUBS[safeHub]?.name || safeHub}`,
     displaySegments: r3Display,
     itinerary: r3Itin.itinerary,
@@ -609,8 +612,8 @@ function generateRoutes(input, disruptions = []) {
   const r4Itin = buildItinerary(r4Segments);
   const route4 = enrichRoute({
     id: 'balanced',
-    name: 'Balanced Hybrid ⭐',
-    icon: '⚖️',
+    name: 'Balanced Hybrid',
+    icon: 'balanced',
     description: 'Optimal sea-air-road logistics mix',
     displaySegments: r4Display,
     itinerary: r4Itin.itinerary,

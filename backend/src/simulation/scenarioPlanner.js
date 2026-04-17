@@ -43,10 +43,10 @@ function filterDisruptions(allDisruptions, scenarioId) {
  */
 function planScenarios(input, allDisruptions, fixedRiskZones) {
   const scenarioConfigs = [
-    { id: 'baseline', label: 'Baseline', icon: '📍', description: 'Optimal route under perfect conditions (no active threats).' },
-    { id: 'weather-aware', label: 'Weather-aware', icon: '⛈️', description: 'Meteorological intelligencepass: bypassing storms and cyclonic events.' },
-    { id: 'geopolitical-aware', label: 'Geopolitical-aware', icon: '🌍', description: 'Strategic bypass of high-tension zones and conflict corridors.' },
-    { id: 'total-avoidance', label: 'Aggregated Intel', icon: '🛡️', description: 'The Master Blueprint: Summation of all weather and geopolitical intelligence.' }
+    { id: 'baseline', label: 'Baseline', icon: 'baseline', description: 'Optimal route under perfect conditions (no active threats).' },
+    { id: 'weather-aware', label: 'Weather-aware', icon: 'weather', description: 'Meteorological intelligence: bypassing storms and cyclonic events.' },
+    { id: 'geopolitical-aware', label: 'Geopolitical-aware', icon: 'geopolitical', description: 'Strategic bypass of high-tension zones and conflict corridors.' },
+    { id: 'total-avoidance', label: 'Aggregated Intel', icon: 'total', description: 'The Master Blueprint: Summation of all weather and geopolitical intelligence.' }
   ];
 
   const results = [];

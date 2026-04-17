@@ -9,7 +9,7 @@ import { LiveMap } from './LiveMap';
 import { HUBS } from '../data/logisticsData';
 import type { ShipmentParams } from '../engine/RiskModeler';
 import type { Scenario } from '../engine/RouteOptimizer';
-import { ChevronDown, Map as MapIcon, X, Maximize2, ShieldAlert, Zap, Filter, Handshake } from 'lucide-react';
+import { ChevronDown, Map as MapIcon, X, Maximize2, ShieldAlert, Zap, Filter, Handshake, Activity, Wind, Globe, ShieldCheck } from 'lucide-react';
 import { ContractConfigPanel } from './ContractConfigPanel';
 
 import MapVisualization from '../../components/MapVisualization';
@@ -22,6 +22,16 @@ import { useCurrency } from '../hooks/useCurrency';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShapExplainabilityView } from './ShapExplainabilityView';
 import '../dashboard-layout.css';
+
+const getScenarioIcon = (id: string) => {
+  switch (id) {
+    case 'baseline': return <Activity size={18} color="var(--accent-emerald)" />;
+    case 'weather-aware': return <Wind size={18} color="var(--accent-cyan)" />;
+    case 'geopolitical-aware': return <Globe size={18} color="var(--accent-rose)" />;
+    case 'total-avoidance': return <ShieldCheck size={18} color="var(--accent-primary)" />;
+    default: return <Zap size={18} color="var(--accent-primary)" />;
+  }
+};
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -430,8 +440,8 @@ export const Dashboard: React.FC = () => {
                           overflow: 'hidden'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                          <span style={{ fontSize: 18 }}>{scenario.icon}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                          {getScenarioIcon(scenario.scenarioId)}
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{scenario.scenarioLabel}</span>
                         </div>
                         
