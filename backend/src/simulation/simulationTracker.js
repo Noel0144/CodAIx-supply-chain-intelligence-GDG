@@ -185,7 +185,6 @@ class SimulationTracker {
 
     this.disruptions.splice(index, 1);
 
-    // Subtract the exact delay this disruption added to each affected shipment
     for (const [, shipment] of this.shipments) {
       if (shipment.status !== 'in_transit') continue;
       if (!shipment.disruptionDelays) continue;
@@ -197,6 +196,7 @@ class SimulationTracker {
         // Clear rerouted flag if no more disruptions affecting this ship
         if (Object.keys(shipment.disruptionDelays).length === 0) {
           shipment.rerouted = false;
+          this.restoreShipment(shipment);
         }
       }
     }
@@ -294,7 +294,12 @@ class SimulationTracker {
 
   isAffected(shipment, disruption) {
     const tp = shipment.trackingPoints;
-    if (!tp) return false;
+    if (!tp || tp.length < 2) return false;
+
+    // Fast-fail check: If the ship currently sits instantly inside the blast radius, it is affected.
+    if (distanceKm(shipment.currentLat, shipment.currentLng, disruption.lat, disruption.lng) < disruption.radius) {
+      return true;
+    }
 
     // Check every segment of the remaining path
     for (let i = shipment.currentSegmentIndex; i < tp.length - 1; i++) {

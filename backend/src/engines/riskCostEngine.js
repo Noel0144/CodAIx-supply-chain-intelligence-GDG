@@ -218,9 +218,9 @@ function calculateSegmentImpact(segment, disruptions = []) {
 
       for (const D of disruptions) {
         const d = distanceKm(lat, lng, D.lat, D.lng);
-        // Influence zone is padded (1.5x) to ensure detection on slightly offset routes
-        if (d < D.radius * 1.5) { 
-          const intensity = Math.max(0, 1 - (d / (D.radius * 1.5)));
+        // Influence zone is padded (3.0x) to ensure detection on physically detoured routes (which push to ~2.4x)
+        if (d < D.radius * 3.0) { 
+          const intensity = Math.max(0, 1 - (d / (D.radius * 4.0))); // scaled intensity
           const penalty = intensity * (D.riskScore / 100);
           maxPenalty = Math.max(maxPenalty, penalty);
           const key = D.id || D.name || `${D.lat},${D.lng}`;

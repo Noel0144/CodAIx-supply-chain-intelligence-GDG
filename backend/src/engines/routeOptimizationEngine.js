@@ -211,10 +211,10 @@ function getSeaWaypoints(originHubId, destHubId, disruptions = []) {
 
   points.push({ lat: d.lat, lng: d.lng });
 
-  // Disable dynamic detours for sea routes to prevent catastrophic path simplification 
-  // that draws straight lines across continents. The predefined sea corridors (Suez/Cape) 
-  // already handle circumvention.
-  return points;
+  // Re-enable dynamic detours so shipments visually arc around tactical disruptions.
+  // The predefined Suez/Cape logic handles macro-routing, but this handles local circumvention.
+  // The 'SAFE_LAND_BBOXES' clipping added elsewhere ensures any arc that touches land renders as a road.
+  return applyDetours(points, disruptions);
 }
 
 /**
@@ -229,7 +229,7 @@ function applyDetours(points, disruptions) {
     const A = points[i];
     const B = points[i+1];
     const dist = distanceKm(A.lat, A.lng, B.lat, B.lng);
-    const steps = Math.ceil(dist / 100); // 4x higher resolution (every 100km)
+    const steps = Math.max(1, Math.ceil(dist / 100)); // 4x higher resolution (every 100km, at least 1)
     for (let s = 1; s <= steps; s++) {
       const t = s / steps;
       densified.push({
@@ -419,9 +419,15 @@ function generateRoutes(input, disruptions = []) {
   const buildDisplayPathWithDisruptions = (segments) => {
     return segments.flatMap(seg => {
       let points = [];
-      if (seg.mode === 'air') points = getFlightWaypoints(seg.origin, seg.dest);
-      else if (seg.mode === 'sea') points = getSeaWaypoints(seg.origin, seg.dest, disruptions);
-      else points = [ { lat: seg.originLat, lng: seg.originLng }, { lat: seg.destLat, lng: seg.destLng } ];
+      if (seg.mode === 'air') {
+        points = getFlightWaypoints(seg.origin, seg.dest);
+        points = applyDetours(points, disruptions);
+      } else if (seg.mode === 'sea') {
+        points = getSeaWaypoints(seg.origin, seg.dest, disruptions);
+      } else {
+        points = [ { lat: seg.originLat, lng: seg.originLng }, { lat: seg.destLat, lng: seg.destLng } ];
+        points = applyDetours(points, disruptions);
+      }
       
       if (seg.mode === 'air') return [calculateSegmentImpact({ ...seg, points, isAir: true }, disruptions)];
 
@@ -440,7 +446,7 @@ function generateRoutes(input, disruptions = []) {
         const SAFE_LAND_BBOXES = [
           { name: 'USA Inland', minLat: 30, maxLat: 48, minLng: -125, maxLng: -72 }, // Expanded to properly catch East Coast (NY is -74) and West Coast (LA is -118)
           { name: 'Central Africa', minLat: -20, maxLat: 20, minLng: 15, maxLng: 30 },
-          { name: 'North Africa', minLat: 10, maxLat: 30, minLng: -15, maxLng: 40 }, // Safely cuts off at Lat 30 to avoid Mediterranean
+          { name: 'North Africa', minLat: 10, maxLat: 30, minLng: -15, maxLng: 31 }, // Safely cuts off before Red Sea (Longitude 32+)
           { name: 'Eurasia Inland', minLat: 45, maxLat: 60, minLng: 10, maxLng: 120 }
         ];
 

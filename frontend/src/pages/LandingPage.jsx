@@ -57,19 +57,6 @@ const LandingPage = () => {
           }}>
             Launch Command Center <ArrowRight size={20} />
           </Link>
-          <Link to="/simulation" className="btn" style={{ 
-            background: 'rgba(255, 255, 255, 0.05)', 
-            color: '#fff',
-            textDecoration: 'none',
-            padding: '1rem 2rem', 
-            fontSize: '1.1rem', 
-            fontWeight: 600,
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border)',
-            backdropFilter: 'blur(10px)'
-          }}>
-            Try Live Simulation
-          </Link>
         </div>
       </section>
 

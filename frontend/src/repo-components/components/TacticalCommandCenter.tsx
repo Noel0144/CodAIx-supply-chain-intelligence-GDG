@@ -220,7 +220,7 @@ export const TacticalCommandCenter: React.FC<Props> = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 420, background: 'var(--bg-surface)', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-dim)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-surface)', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-dim)' }}>
       {/* Header */}
       <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-dim)', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.2)' }}>
         <Zap size={16} color="var(--accent-cyan)" />

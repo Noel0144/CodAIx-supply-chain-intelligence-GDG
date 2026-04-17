@@ -49,7 +49,6 @@ function App() {
               <div className="pulse-dot"></div>
               <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>NETWORK ACTIVE</span>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: 'var(--primary)', border: '1px solid var(--border)' }}></div>
           </div>
         </div>
       </nav>
@@ -66,7 +65,7 @@ function App() {
       </main>
 
       <footer style={{ padding: '2rem', borderTop: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.875rem' }}>
-        &copy; 2026 Autonomous Supply Chain Intelligence System • GDG Solution Challenge
+        &copy; 2026 SWERVE Supply Chain Intelligence
       </footer>
     </div>
   );

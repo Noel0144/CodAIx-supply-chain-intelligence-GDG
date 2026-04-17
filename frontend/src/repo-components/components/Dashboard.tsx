@@ -306,7 +306,7 @@ export const Dashboard: React.FC = () => {
 
       <div className="main-layout" style={{ gridTemplateColumns: '1fr 480px', paddingTop: 0 }}>
         {/* CENTER CONTENT: RESULTS / ANALYTICS */}
-        <main className="content-panel" style={{ padding: '24px 40px' }}>
+        <main className="content-panel" style={{ padding: '24px 40px', overflowY: activeTab === 'EXPLAIN' ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
           {activeTab === 'ROUTING' ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -509,7 +509,7 @@ export const Dashboard: React.FC = () => {
               </div>
             </>
           ) : (
-            <div style={{ animation: 'fadeIn 0.3s', height: '100%' }}>
+            <div style={{ animation: 'fadeIn 0.3s', height: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               {activeTab === 'EXPLAIN' && <ShapExplainabilityView scenarios={scenarios} />}
               {activeTab === 'RISKS' && <RiskAlertsView scenarios={scenarios} news={newsSignals} globalRisk={globalGeopolRisk} />}
               {activeTab === 'COST' && <CostBreakdownView scenarios={scenarios} />}

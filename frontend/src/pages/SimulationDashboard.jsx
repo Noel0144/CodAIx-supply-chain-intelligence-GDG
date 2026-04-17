@@ -216,46 +216,47 @@ const SimulationDashboard = () => {
           </div>
         </div>
 
-        {/* SIDEBAR PANEL */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto', paddingRight: '4px' }}>
-          {/* AI COMMAND CENTER */}
-          <TacticalCommandCenter />
+        {/* SIDEBAR PANEL - locked height, no outer scroll */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+          {/* AI COMMAND CENTER - grows to fill space */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <TacticalCommandCenter />
+          </div>
 
-          {/* ACTIVE SHIPMENTS LIST */}
-          <div className="card" style={{ flex: 1 }}>
-            <h4 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={16}/> Active Shipments</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {/* ACTIVE SHIPMENTS LIST - fixed cap, scrolls internally */}
+          <div className="card" style={{ flex: '0 0 auto', maxHeight: '36%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <h4 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, fontSize: '0.85rem' }}>
+              <History size={15}/> Active Shipments
+            </h4>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {shipments.length === 0 ? (
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textAlign: 'center', padding: '2rem' }}>No shipments currently in transit.</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textAlign: 'center', padding: '1rem' }}>No shipments currently in transit.</p>
               ) : (
                 shipments.map(s => (
-                  <div key={s.id} className="card" style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.02)', border: s.rerouted ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{s.input.origin} ➝ {s.input.destination}</span>
-                      {s.rerouted && <span className="badge badge-high" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>REROUTED</span>}
+                  <div key={s.id} className="card" style={{ padding: '0.5rem 0.65rem', background: 'rgba(255,255,255,0.02)', border: s.rerouted ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--border)', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.72rem' }}>{s.input.origin} ➝ {s.input.destination}</span>
+                      {s.rerouted && <span className="badge badge-high" style={{ fontSize: '0.55rem', padding: '1px 4px' }}>REROUTED</span>}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ textTransform: 'capitalize' }}>Mode: {s.currentSegmentMode} ({s.route.modes.join('+')})</span>
                       <span style={{ color: s.status === 'delivered' ? 'var(--success)' : 'var(--info)' }}>{s.status.toUpperCase()}</span>
                     </div>
-                    {/* Progress Bar */}
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', margin: '8px 0', overflow: 'hidden' }}>
-                      <div style={{ 
-                        width: s.status === 'delivered' ? '100%' : `${((s.currentSegmentIndex + s.progress) / (s.totalSegments || 1)) * 100}%`, 
-                        height: '100%', 
+                    <div style={{ height: '2px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', margin: '5px 0', overflow: 'hidden' }}>
+                      <div style={{
+                        width: s.status === 'delivered' ? '100%' : `${((s.currentSegmentIndex + s.progress) / (s.totalSegments || 1)) * 100}%`,
+                        height: '100%',
                         background: s.rerouted ? 'var(--danger)' : (s.currentSegmentMode === 'air' ? '#a855f7' : s.currentSegmentMode === 'sea' ? '#06b6d4' : 'var(--primary)')
                       }}></div>
                     </div>
-                    
                     {s.impactDelta && s.impactDelta.cost > 0 && (
-                      <div style={{ marginBottom: '8px', fontSize: '0.65rem', padding: '4px 6px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--danger)' }}>Impact: +${s.impactDelta.cost.toLocaleString()}</span>
-                        <span style={{ color: 'var(--warning)' }}>Delay: +{s.impactDelta.delayHours}hrs</span>
+                      <div style={{ marginBottom: '4px', fontSize: '0.58rem', padding: '2px 5px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--danger)' }}>+${s.impactDelta.cost.toLocaleString()}</span>
+                        <span style={{ color: 'var(--warning)' }}>+{s.impactDelta.delayHours}hrs</span>
                       </div>
                     )}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}><Clock size={10}/> ETA: {new Date(s.eta).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}><Clock size={10}/> {new Date(s.eta).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                       <span style={{ fontWeight: 600, color: 'var(--success)' }}>${s.cost.total.toLocaleString()}</span>
                     </div>
                   </div>

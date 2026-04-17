@@ -25,7 +25,7 @@ export const TopSearchBar: React.FC<Props> = ({ params, setParams, onSearch }) =
     axios.get('/api/hubs')
       .then(res => {
         if (res.data && res.data.cities) {
-          setCities(res.data.cities);
+          setCities([...res.data.cities].sort((a, b) => a.localeCompare(b)));
         }
       })
       .catch(err => console.error('Failed to load cities', err));
