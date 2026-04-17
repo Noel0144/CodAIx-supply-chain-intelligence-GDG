@@ -33,13 +33,13 @@ function App() {
             <LayoutDashboard size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
             Main Dashboard
           </Link>
-          <Link to="/risk" className={`nav-link ${location.pathname === '/risk' ? 'active' : ''}`}>
-            <ShieldAlert size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
-            Global Intel
-          </Link>
           <Link to="/simulation" className={`nav-link ${location.pathname === '/simulation' ? 'active' : ''}`}>
             <Activity size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
             Live Simulation
+          </Link>
+          <Link to="/risk" className={`nav-link ${location.pathname === '/risk' ? 'active' : ''}`}>
+            <ShieldAlert size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+            Global Intel
           </Link>
         </div>
 

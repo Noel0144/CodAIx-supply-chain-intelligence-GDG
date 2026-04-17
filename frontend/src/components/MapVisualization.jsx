@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Fragment } from 'react';
+import React, { useEffect, useState, useRef, Fragment } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, Circle, useMap, useMapEvents, Tooltip } from 'react-leaflet';
 
 import L from 'leaflet';
@@ -49,15 +49,22 @@ const MODE_DASH = {
 };
 
 // Map Centering and Events
+// hasFit ensures we ONLY auto-position the camera on the very first load.
+// After that the user controls zoom/pan freely - no more surprise zoom-outs.
 const MapController = ({ center, zoom, bounds, onMapClick }) => {
   const map = useMap();
+  const hasFit = useRef(false);
+
   useEffect(() => {
+    if (hasFit.current) return; // Never touch the camera after first render
     if (bounds && bounds.length > 0) {
       map.fitBounds(bounds, { padding: [50, 50] });
+      hasFit.current = true;
     } else if (center) {
       map.setView(center, zoom);
+      hasFit.current = true;
     }
-  }, [center, zoom, bounds, map]);
+  }, [bounds, center, zoom, map]);
 
   useMapEvents({
     click: (e) => {
@@ -79,23 +86,26 @@ const MapVisualization = ({
 }) => {
 
   const [bounds, setBounds] = useState(null);
-
-  // Stringify shipment IDs to prevent constant re-zooming on every animation tick
-  const shipmentIds = shipments.map(s => s.id).join(',');
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
+    // Only calculate bounds once on first data load — never again on tick refreshes
+    if (hasInitialized.current) return;
+
     if (selectedRoute && selectedRoute.displaySegments) {
       const allPoints = selectedRoute.displaySegments.flatMap(s => s.points);
       if (allPoints.length > 0) {
         setBounds(allPoints.map(p => [p.lat, p.lng]));
+        hasInitialized.current = true;
       }
     } else if (shipments.length > 0) {
       const allPoints = shipments.flatMap(s => s.route.displaySegments.flatMap(ds => ds.points));
       if (allPoints.length > 0) {
         setBounds(allPoints.map(p => [p.lat, p.lng]));
+        hasInitialized.current = true;
       }
     }
-  }, [selectedRoute, shipmentIds]);
+  }, [selectedRoute, shipments]);
 
   const renderSegments = (segments, keyPrefix) => {
     if (!segments) return null;

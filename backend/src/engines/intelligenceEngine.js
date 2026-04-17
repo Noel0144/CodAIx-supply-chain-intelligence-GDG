@@ -25,8 +25,8 @@ class IntelligenceEngine {
   }
 
   tick() {
-    // ~5% chance per tick to spawn a new global event
-    const shouldSpawn = Math.random() < 0.05; 
+    // Increased probability (~45%) to match user request for news every 6-7s
+    const shouldSpawn = Math.random() < 0.45; 
     
     const now = Date.now();
     let expiredIds = [];

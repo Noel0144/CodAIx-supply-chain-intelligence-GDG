@@ -237,19 +237,7 @@ export const TacticalCommandCenter: React.FC<Props> = () => {
             <ShieldAlert size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
             <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--text-secondary)' }}>Awaiting incident report</div>
             <div style={{ fontSize: 10, lineHeight: 1.6, maxWidth: 240, margin: '0 auto' }}>
-              Describe any disruption in natural language. Gemini will scan all active shipments and recommend precise rerouting actions.
-            </div>
-            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                'Suez Canal blocked by Houthi escalation',
-                'Typhoon near Shanghai port, vessels at risk',
-                'Strike at Port of Los Angeles — no cargo movement',
-              ].map(ex => (
-                <button key={ex} onClick={() => setInput(ex)}
-                  style={{ padding: '6px 12px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 20, color: '#818cf8', fontSize: 10, cursor: 'pointer', textAlign: 'left' }}>
-                  {ex}
-                </button>
-              ))}
+              Describe any disruption in natural language. The system will scan all active shipments and recommend precise rerouting actions.
             </div>
           </div>
         )}
