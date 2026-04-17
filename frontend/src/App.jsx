@@ -1,7 +1,8 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import SimulationDashboard from './pages/SimulationDashboard';
 import RiskDashboard from './pages/RiskDashboard';
-import { Truck, Activity, ShieldAlert, BarChart3, Globe, Zap, LayoutDashboard } from 'lucide-react';
+import LandingPage from './pages/LandingPage';
+import { Truck, Activity, ShieldAlert, BarChart3, Globe, Zap, LayoutDashboard, Home } from 'lucide-react';
 
 import { Dashboard } from './repo-components/components/Dashboard';
 import { CurrencyProvider } from './repo-components/hooks/useCurrency';
@@ -12,17 +13,23 @@ function App() {
   return (
     <div className="app-container">
       <nav>
-        <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ background: 'var(--primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', display: 'flex' }}>
-            <Globe size={24} color="white" />
+        <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+            <div style={{ background: 'var(--primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', display: 'flex' }}>
+              <Globe size={24} color="white" />
+            </div>
+            <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
+              SWERVE <span style={{ color: 'var(--primary)', fontWeight: 400 }}>Intelligence</span>
+            </span>
           </div>
-          <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
-            CODAIX <span style={{ color: 'var(--primary)', fontWeight: 400 }}>Intelligence</span>
-          </span>
-        </div>
+        </Link>
 
         <div className="nav-links">
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+            <Home size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+            Home
+          </Link>
+          <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
             <LayoutDashboard size={18} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
             Main Dashboard
           </Link>
@@ -42,7 +49,7 @@ function App() {
               <div className="pulse-dot"></div>
               <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>NETWORK ACTIVE</span>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--primary), var(--accent))', border: '2px solid rgba(255,255,255,0.1)' }}></div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: 'var(--primary)', border: '1px solid var(--border)' }}></div>
           </div>
         </div>
       </nav>
@@ -50,7 +57,8 @@ function App() {
       <main className="animate-fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: location.pathname === '/' ? 0 : '2rem', maxWidth: location.pathname === '/' ? '100%' : undefined }}>
         <CurrencyProvider>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/risk" element={<RiskDashboard />} />
             <Route path="/simulation" element={<SimulationDashboard />} />
           </Routes>
