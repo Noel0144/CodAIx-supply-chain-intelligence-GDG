@@ -113,11 +113,12 @@ function getSeaWaypoints(originHubId, destHubId, disruptions = []) {
   ];
 
   const isWest = oRegion === 'europe' || isAmericasEast || (o.lng < -20 && o.lng > -100);
-  const isAsia = dRegion === 'east_asia' || dRegion === 'southeast_asia' || dRegion === 'south_asia' || dRegion === 'oceania';
+  const destAsia = dRegion === 'east_asia' || dRegion === 'southeast_asia' || dRegion === 'south_asia' || dRegion === 'oceania';
+  const originAsia = oRegion === 'east_asia' || oRegion === 'southeast_asia' || oRegion === 'south_asia' || oRegion === 'oceania';
   const isMidEast = dRegion === 'middle_east';
   const isSEAsia = dRegion === 'southeast_asia' || dRegion === 'east_asia' || dRegion === 'oceania';
 
-  if (isWest && (isAsia || isMidEast)) {
+  if (isWest && (destAsia || isMidEast)) {
     if (avoidSuez) {
       if (o.lng < -30) points.push({ lat: 35.0, lng: -40.0 });
       else if (o.lat > 45) points.push(...northEuropeWaypoints);
@@ -150,9 +151,9 @@ function getSeaWaypoints(originHubId, destHubId, disruptions = []) {
     points.push(hormuzStrait);
   }
   // 3. Reversed flows
-  else if ((oRegion === 'east_asia' || oRegion === 'southeast_asia') && isWest) {
-    points.push(malaccaStrait);
-    points.push(capeComorin);
+  else if ((oRegion === 'east_asia' || oRegion === 'southeast_asia' || oRegion === 'south_asia') && isWest) {
+    if (oRegion === 'east_asia' || oRegion === 'southeast_asia') points.push(malaccaStrait);
+    if (oRegion === 'east_asia' || oRegion === 'southeast_asia' || oRegion === 'south_asia') points.push(capeComorin);
     if (avoidSuez) {
       const reversedCape = [...capeWaypoints].reverse();
       points.push(...reversedCape);
@@ -171,21 +172,34 @@ function getSeaWaypoints(originHubId, destHubId, disruptions = []) {
       points.push(...reversedSuez);
     }
   }
-  // 4. Americas flows
   // 4. Americas flows (LA to Asia / India)
-  else if (isAmericasWest && isAsia) {
+  else if (isAmericasWest && destAsia) {
     points.push({ lat: 35.0, lng: -140.0 }); // Off-coast California
     points.push({ lat: 30.0, lng: 180.0 }); // Mid Pacific 
     points.push({ lat: 15.0, lng: 130.0 }); // Philippine Sea Bypass
     if (isSEAsia || dRegion === 'south_asia') points.push(malaccaStrait);
     if (dRegion === 'south_asia') points.push(capeComorin);
   }
-  else if (isAsia && destAmericasWest) {
-    if (oRegion === 'south_asia') points.push(capeComorin);
-    if (oRegion === 'southeast_asia' || oRegion === 'south_asia') points.push(malaccaStrait);
-    points.push({ lat: 15.0, lng: 130.0 });
-    points.push({ lat: 30.0, lng: 180.0 });
-    points.push({ lat: 35.0, lng: -140.0 });
+  else if (originAsia && destAmericasWest) {
+    if (oRegion === 'south_asia') {
+       // From India to LA, route via Middle East / Europe to avoid crossing Pacific vs Atlantic, wait: 
+       // India to LA is slightly closer via Pacific if from East Coast India, but Mumbai (West Coast) is closer via Atlantic/Suez! 
+       // The user requested: "goes throguh middle east over africa in a efficient path"
+       if (avoidSuez) {
+          const reversedCape = [...capeWaypoints].reverse();
+          points.push(...reversedCape);
+       } else {
+          const reversedSuez = [...suezWaypoints].reverse();
+          points.push(...reversedSuez);
+       }
+       points.push({ lat: 35.0, lng: -40.0 }); // Mid Atlantic
+       points.push({ lat: 9.08, lng: -79.68 }); // Panama Canal
+    } else {
+       if (oRegion === 'southeast_asia' || oRegion === 'south_asia') points.push(malaccaStrait);
+       points.push({ lat: 15.0, lng: 130.0 });
+       points.push({ lat: 30.0, lng: 180.0 });
+       points.push({ lat: 35.0, lng: -140.0 });
+    }
   }
   // 5. Default Heavy Detour Logic (If no specific rule matched)
   else if (distanceKm(o.lat, o.lng, d.lat, d.lng) > 5000) {
@@ -197,8 +211,10 @@ function getSeaWaypoints(originHubId, destHubId, disruptions = []) {
 
   points.push({ lat: d.lat, lng: d.lng });
 
-  // Apply Smart Detours around arbitrary disruptions
-  return applyDetours(points, disruptions);
+  // Disable dynamic detours for sea routes to prevent catastrophic path simplification 
+  // that draws straight lines across continents. The predefined sea corridors (Suez/Cape) 
+  // already handle circumvention.
+  return points;
 }
 
 /**
@@ -419,6 +435,24 @@ function generateRoutes(input, disruptions = []) {
         const midLng = (p1.lng + p2.lng) / 2;
         
         let finalMode = seg.mode;
+
+        // Visual land-clipping correction for major continental crossings
+        const SAFE_LAND_BBOXES = [
+          { name: 'USA Inland', minLat: 30, maxLat: 48, minLng: -125, maxLng: -72 }, // Expanded to properly catch East Coast (NY is -74) and West Coast (LA is -118)
+          { name: 'Central Africa', minLat: -20, maxLat: 20, minLng: 15, maxLng: 30 },
+          { name: 'North Africa', minLat: 10, maxLat: 30, minLng: -15, maxLng: 40 }, // Safely cuts off at Lat 30 to avoid Mediterranean
+          { name: 'Eurasia Inland', minLat: 45, maxLat: 60, minLng: 10, maxLng: 120 }
+        ];
+
+        const isOverLand = SAFE_LAND_BBOXES.some(reg => 
+          midLat >= reg.minLat && midLat <= reg.maxLat && 
+          midLng >= reg.minLng && midLng <= reg.maxLng
+        );
+
+        if (seg.mode === 'sea' && isOverLand) {
+          finalMode = 'road';
+        }
+
         rawSubSegments.push({ mode: finalMode, point: p2, startPoint: p1 });
       }
 
