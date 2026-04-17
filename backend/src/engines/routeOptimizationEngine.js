@@ -418,18 +418,7 @@ function generateRoutes(input, disruptions = []) {
         const midLat = (p1.lat + p2.lat) / 2;
         const midLng = (p1.lng + p2.lng) / 2;
         
-        const isOverLand = LAND_REGIONS.some(reg => 
-          midLat >= reg.minLat && midLat <= reg.maxLat && 
-          midLng >= reg.minLng && midLng <= reg.maxLng
-        );
-
         let finalMode = seg.mode;
-        const inCanal = CANAL_ZONES.some(c => distanceKm(midLat, midLng, c.lat, c.lng) < 150);
-        
-        if (seg.mode === 'sea' && isOverLand && !inCanal) {
-          finalMode = 'road';
-        }
-
         rawSubSegments.push({ mode: finalMode, point: p2, startPoint: p1 });
       }
 
